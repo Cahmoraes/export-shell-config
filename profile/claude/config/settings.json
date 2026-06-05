@@ -6,6 +6,7 @@
   "permissions": {
     "defaultMode": "bypassPermissions"
   },
+  "model": "sonnet",
   "hooks": {
     "SessionStart": [
       {
@@ -43,6 +44,17 @@
           {
             "type": "command",
             "command": "bash -c '~/bin/claude-notify \"Claude Code\" \"Needs your input!\" &'"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rtk hook claude"
           }
         ]
       }
@@ -99,6 +111,5 @@
   "remoteControlAtStartup": true,
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true,
-  "model": "haiku"
+  "skipAutoPermissionPrompt": true
 }

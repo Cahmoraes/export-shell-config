@@ -211,6 +211,7 @@
     "settings.json",
     "keybindings.json",
     "statusline-command.sh",
+    "CLAUDE.md",
     "hooks/",
     "agents/",
     "skills/"

@@ -104,6 +104,16 @@
         "macos": "brew install kubectl",
         "debian": "sudo apt install -y kubectl || (curl -LO \"https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl\" && sudo install -m 0755 kubectl /usr/local/bin/kubectl)"
       }
+    },
+    "rtk": {
+      "describe": "proxy CLI para Claude Code — filtra saída e reduz consumo de tokens (60-90%)",
+      "detect": "rtk",
+      "source": "https://github.com/rtk-ai/rtk",
+      "verify": "rtk --version",
+      "install": {
+        "fallback": "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/main/install.sh | bash"
+      },
+      "note": "Instala em ~/.local/bin/rtk. Cuidado com colisão de nome: 'reachingforthejack/rtk' (Rust Type Kit) usa o mesmo binário. Verifique com `rtk gain` após instalar — se falhar, é o errado."
     }
   },
 

@@ -138,6 +138,7 @@ Esta fase é o critério de sucesso. Execute, não presuma.
 | `glow` | CLI | `glow --version` |
 | `micro` | CLI | `micro --version` |
 | `kubectl` | CLI | `kubectl version --client` |
+| `rtk` | CLI | `rtk --version` |
 | `nvm` | version manager | `nvm --version  # rodar em shell interativa, após carregar o nvm` |
 | `pyenv` | version manager | `pyenv --version` |
 | `bun` | version manager | `bun --version` |

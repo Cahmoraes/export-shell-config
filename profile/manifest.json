@@ -165,6 +165,20 @@
       "shell_init": null,
       "config_dirs": null,
       "note": null
+    },
+    {
+      "name": "rtk",
+      "source": "https://github.com/rtk-ai/rtk",
+      "install": {
+        "fallback": "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/main/install.sh | bash"
+      },
+      "verify": "rtk --version",
+      "detect": "rtk",
+      "detect_alt": null,
+      "detect_path": null,
+      "shell_init": null,
+      "config_dirs": null,
+      "note": "Instala em ~/.local/bin/rtk. Cuidado com colisão de nome: 'reachingforthejack/rtk' (Rust Type Kit) usa o mesmo binário. Verifique com `rtk gain` após instalar — se falhar, é o errado."
     }
   ],
   "version_managers": [

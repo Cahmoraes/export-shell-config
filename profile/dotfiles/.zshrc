@@ -147,3 +147,4 @@ export PULSE_SERVER=unix:/mnt/wslg/runtime-dir/pulse/native
 
 # bun completions
 [ -s "/home/cahmoraes/.bun/_bun" ] && source "/home/cahmoraes/.bun/_bun"
+export PATH="$HOME/.local/bin:$PATH"
