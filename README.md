@@ -148,11 +148,13 @@ Chamado pelo `export.sh` (você normalmente não o roda direto). Em ordem:
   - **pacotes node globais** (onde moram `typescript-language-server`,
     `typescript`, `@vtsls/language-server`);
   - `settings.json` **sanitizado** (paths do `$HOME` viram `${HOME}`, chaves de
-    segredo removidas), `keybindings.json`, `statusline-command.sh`, e os
-    diretórios `hooks/`, `agents/`, `skills/`.
+    segredo removidas), `keybindings.json`, `statusline-command.sh`, o
+    **`CLAUDE.md` global** (suas instruções para todos os projetos), e os
+    diretórios `hooks/`, `agents/`, `skills/`, `commands/`.
 - **O que NUNCA exporta:** `.credentials.json`, `.claude.json`, `history.jsonl`,
-  `projects/`, `sessions/` — tokens, histórico e estado de sessão (ver
-  `sensitive_never_export` em `lib/claude_catalog.json`).
+  `projects/`, `sessions/` (tokens, histórico e estado de sessão) e o
+  **`CLAUDE.local.md`** (instruções pessoais/gitignored — não vão para um repo que
+  pode ser público). Ver `sensitive_never_export` em `lib/claude_catalog.json`.
 - **Sinaliza riscos:** flags de segurança (`bypassPermissions`) e hooks
   não-portáveis (`wsl-screenshot-cli`, `~/bin/claude-notify`) vão marcados no
   manifesto para o Claude tratar no destino.
@@ -347,6 +349,8 @@ Rode-os após qualquer mudança em `lib/`, `scripts/dryrun.py` ou nos catálogos
 - **Nunca** copia `.credentials.json`, `.claude.json`, `history.jsonl`,
   `projects/` nem `sessions/` (tokens OAuth, histórico e estado de sessão). No
   destino você faz login normalmente.
+- O **`CLAUDE.md` global** (instruções compartilháveis) é exportado; o
+  **`CLAUDE.local.md`** (pessoal/gitignored) **nunca** é — o repo pode ser público.
 - O `settings.json` é **sanitizado**: chaves que casam `api_key|token|secret|
   password|credential` são removidas e os paths do seu `$HOME` viram `${HOME}`.
 - Os hashes `gitCommitSha` no manifesto são SHAs de commit **públicos** do

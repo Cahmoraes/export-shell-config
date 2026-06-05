@@ -34,6 +34,12 @@ class TestCatalog(unittest.TestCase):
             self.assertIn("install", meta, f"{name} sem install")
             self.assertIn("for_plugins", meta, f"{name} sem for_plugins")
 
+    def test_global_claude_md_exported_local_blindado(self):
+        # CLAUDE.md global é exportável; CLAUDE.local.md (pessoal) nunca viaja.
+        cat = ce.load_catalog()
+        self.assertIn("CLAUDE.md", cat["config_to_export"]["files"])
+        self.assertIn("CLAUDE.local.md", cat["sensitive_never_export"]["files"])
+
 
 class TestSanitize(unittest.TestCase):
     def test_removes_secret_keys(self):
@@ -185,6 +191,25 @@ class TestCopyTextSanitized(unittest.TestCase):
         out = dst.read_text(encoding="utf-8")
         self.assertIn("${HOME}", out)
         self.assertNotIn(ce.HOME_STR, out)
+
+
+class TestCopyClaudeConfig(unittest.TestCase):
+    def test_global_claude_md_copiado_local_ignorado(self):
+        # ~/.claude fake: CLAUDE.md (exporta) + CLAUDE.local.md (não deve viajar).
+        cat = ce.load_catalog()
+        tmp = Path(tempfile.mkdtemp())
+        fake = tmp / ".claude"
+        (fake).mkdir()
+        (fake / "CLAUDE.md").write_text("# instruções globais\n", encoding="utf-8")
+        (fake / "CLAUDE.local.md").write_text("# pessoal — não compartilhar\n", encoding="utf-8")
+        out = tmp / "out"
+        with mock.patch.object(ce, "CLAUDE_DIR", fake), \
+             mock.patch.object(ce, "OUT", out), \
+             mock.patch.object(ce, "CONFIG_OUT", out / "config"):
+            copied = ce.copy_claude_config(cat, {"theme": "auto"})
+        self.assertIn("CLAUDE.md", copied)
+        self.assertTrue((out / "config" / "CLAUDE.md").exists())
+        self.assertFalse((out / "config" / "CLAUDE.local.md").exists())  # blindado
 
 
 if __name__ == "__main__":

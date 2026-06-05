@@ -56,6 +56,7 @@
       ".credentials.json",
       ".claude.json",
       ".claude.json.backup",
+      "CLAUDE.local.md",
       "history.jsonl",
       ".caveman-history.jsonl",
       ".last-update-result.json",
@@ -74,8 +75,8 @@
   },
 
   "config_to_export": {
-    "_comment": "O que copiar de ~/.claude/ para o profile (config/identidade, sem segredos).",
-    "files": ["settings.json", "keybindings.json", "statusline-command.sh"],
+    "_comment": "O que copiar de ~/.claude/ para o profile (config/identidade, sem segredos). CLAUDE.md é a instrução GLOBAL do usuário (todos os projetos). CLAUDE.local.md NÃO entra aqui de propósito — é pessoal/gitignored (ver sensitive_never_export); o repo pode ser público.",
+    "files": ["settings.json", "keybindings.json", "statusline-command.sh", "CLAUDE.md"],
     "dirs": ["hooks", "agents", "skills", "commands"]
   },
 
