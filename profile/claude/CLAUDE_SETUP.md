@@ -9,7 +9,12 @@
 1. **Backup antes de tudo.** Faça cópia de `~/.claude/settings.json`,
    `keybindings.json`, `statusline-command.sh` e dos diretórios `hooks/`,
    `agents/`, `skills/` para `~/.claude/<arquivo>.bak-<data>` antes de sobrescrever.
-2. **Idempotência.** `claude plugin list` antes de instalar; pule o que já existe.
+2. **Idempotência (tudo repetível sem quebrar).** Cheque antes de criar:
+   `claude plugin list` antes de instalar plugin; `claude plugin marketplace list`
+   antes de adicionar marketplace; `command -v <binário>` antes de instalar
+   language server. Pule o que já existe (registre "já presente"). Para
+   settings/hooks/skills: faça MERGE com backup, nunca sobrescreva cego. Rodar
+   este setup duas vezes deve ser seguro.
 3. **Verificação.** Ao final, confirme plugins ativos e cada language server
    respondendo `--version`.
 4. **Segurança em primeiro lugar.** NÃO aplique as `security_flags` (abaixo) sem
@@ -22,7 +27,7 @@
   `pip`/`pnpm` (pyright), `go` (gopls), `rustup`/`cargo` (rust-analyzer).
 
 ## Fase 1 — Marketplaces
-Adicione cada marketplace de origem:
+Rode `claude plugin marketplace list` primeiro; adicione só os que faltam:
 - `claude-plugins-official` → `anthropics/claude-plugins-official` (`claude plugin marketplace add anthropics/claude-plugins-official`)
 - `caveman` → `JuliusBrussee/caveman` (`claude plugin marketplace add JuliusBrussee/caveman`)
 - `context-mode` → `mksglu/context-mode` (`claude plugin marketplace add mksglu/context-mode`)
@@ -37,20 +42,33 @@ Para cada plugin em `manifest.plugins`, rode `claude plugin install <name>` (o
 
 ## Fase 3 — Language servers (o que faz os plugins LSP funcionarem)
 Cada plugin LSP é só a integração; o BINÁRIO do language server precisa existir
-no PATH. Para cada linha abaixo cujo binário esteja faltando nesta máquina,
-instale com o gerenciador disponível (veja `manifest.language_servers[].install`):
+no PATH. Regras:
 
-| Language server | Plugins | Binário | Estava na origem? |
-|---|---|---|---|
-| `typescript-language-server` | typescript-lsp@claude-plugins-official | `typescript-language-server` | sim |
-| `vtsls` | typescript-lsp@claude-plugins-official | `vtsls` | sim |
-| `pyright` | pyright-lsp@claude-plugins-official | `pyright-langserver` | sim |
-| `gopls` | gopls-lsp@claude-plugins-official | `gopls` | sim |
-| `rust-analyzer` | rust-analyzer-lsp@claude-plugins-official | `rust-analyzer` | sim |
+- **Idempotência:** antes de instalar, rode `command -v <binário>`. Se já existe,
+  PULE (registre "já presente (vX)"). Só instale o que falta.
+- **Gerenciador de node (TypeScript e pyright):** NÃO assuma pnpm. Detecte o que
+  a máquina tem e use-o — **prefira `pnpm` se `command -v pnpm` existir; senão
+  use `npm`**. O manifesto traz os dois comandos em `install.pnpm` e
+  `install.npm`. Se faltarem ambos, habilite um com `corepack enable` (traz o
+  pnpm) ou instale o Node (traz o npm) antes.
+- **Não-node:** `gopls` via `go install`; `rust-analyzer` via `rustup`/`cargo`.
 
-As libs de TS na origem vinham de pacotes node globais — veja
-`manifest.global_node_packages` (ex.: `typescript-language-server`, `typescript`,
-`@vtsls/language-server` via pnpm). Replique os relevantes.
+| Language server | Plugins | Binário | Gerenciadores | Estava na origem? |
+|---|---|---|---|---|
+| `typescript-language-server` | typescript-lsp@claude-plugins-official | `typescript-language-server` | pnpm, npm | sim |
+| `vtsls` | typescript-lsp@claude-plugins-official | `vtsls` | pnpm, npm | sim |
+| `pyright` | pyright-lsp@claude-plugins-official | `pyright-langserver` | pnpm, npm, pip | sim |
+| `gopls` | gopls-lsp@claude-plugins-official | `gopls` | go | sim |
+| `rust-analyzer` | rust-analyzer-lsp@claude-plugins-official | `rust-analyzer` | rustup, cargo | sim |
+
+A coluna "Gerenciadores" lista as chaves disponíveis em
+`manifest.language_servers[].install` — escolha a que existe nesta máquina.
+As libs de TS na origem vinham de pacotes node globais
+(`manifest.global_node_packages`: `typescript-language-server`, `typescript`,
+`@vtsls/language-server`). Replique os relevantes com **pnpm OU npm**, conforme
+o disponível. Exemplos equivalentes:
+- pnpm: `pnpm add -g typescript-language-server typescript`
+- npm:  `npm install -g typescript-language-server typescript`
 
 ## Fase 4 — settings.json (com cuidado)
 Mescle `config/settings.json` no `~/.claude/settings.json`. Os paths usam

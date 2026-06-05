@@ -152,6 +152,19 @@ class TestManifestAndSetup(unittest.TestCase):
                        "wsl-screenshot-cli", "claude plugin marketplace add"):
             self.assertIn(marker, md)
 
+    def test_setup_md_offers_pnpm_and_npm(self):
+        # Máquina alvo pode ter só npm: o roteiro precisa oferecer os dois.
+        md = ce.render_setup_md(self._manifest())
+        self.assertIn("pnpm add -g", md)
+        self.assertIn("npm install -g", md)
+        self.assertIn("prefira `pnpm`", md)
+
+    def test_setup_md_reinforces_idempotence(self):
+        md = ce.render_setup_md(self._manifest())
+        self.assertIn("command -v", md)                       # checagem antes de instalar
+        self.assertIn("claude plugin marketplace list", md)   # idempotência de marketplace
+        self.assertIn("claude plugin list", md)               # idempotência de plugin
+
 
 class TestCopyTextSanitized(unittest.TestCase):
     def test_replaces_home_in_file(self):
