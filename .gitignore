@@ -8,3 +8,6 @@ __pycache__/
 
 # Backups locais
 *.backup-*
+
+# Worktrees do Claude Code (diretórios temporários de sessão)
+.claude/worktrees/
