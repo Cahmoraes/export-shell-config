@@ -139,12 +139,19 @@ def detect_global_node_packages() -> dict:
 
 
 def scan_non_portable(settings: dict, catalog: dict) -> list:
-    """Acha trechos de settings (hooks, comandos) que não rodam fora do WSL."""
+    """Acha trechos de settings/hooks específicos de plataforma (qualquer uma).
+
+    Varre todos os grupos de marcadores (wsl_windows, macos, local_scripts), não
+    só WSL — o destino decide o que condicionar conforme o próprio SO.
+    """
     text = json.dumps(settings, ensure_ascii=False)
     hits = []
-    for pat in catalog["non_portable_markers"]["patterns"]:
-        if pat in text:
-            hits.append(pat)
+    for group, pats in catalog["non_portable_markers"].items():
+        if group.startswith("_") or not isinstance(pats, list):
+            continue
+        for pat in pats:
+            if pat in text and pat not in hits:
+                hits.append(pat)
     return hits
 
 
@@ -344,12 +351,19 @@ Mescle `config/settings.json` no `~/.claude/settings.json`. Os paths usam
   usuário pode NÃO querer isso.
 
 ## Fase 5 — Hooks, statusline, keybindings, agents, skills
-Copie de `config/` para `~/.claude/`. **Atenção a trechos não-portáveis**
-encontrados: {np_lines}
-- `wsl-screenshot-cli`, `.ps1`, `/mnt/c`, `powershell.exe` → WSL/Windows-only;
-  no macOS/Linux, **remova ou condicione** esses hooks.
-- `~/bin/claude-notify` → script local; se não existir nesta máquina, recrie-o
-  ou remova o hook que o chama.
+Copie de `config/` para `~/.claude/`. **Atenção a trechos específicos de
+plataforma** encontrados: {np_lines}
+
+Detecte o SO deste destino e trate cada marcador conforme a plataforma a que
+pertence (regra simétrica — vale nos dois sentidos):
+- **WSL/Windows-only** (`wsl-screenshot-cli`, `.ps1`, `/mnt/c`, `/mnt/wslg`,
+  `powershell.exe`, `wslpath`) → se o destino NÃO for WSL/Windows, **remova ou
+  condicione** o hook.
+- **macOS-only** (`pbcopy`, `pbpaste`, `osascript`, `/opt/homebrew`, `open -a`,
+  `defaults write`, `/Users/`) → se o destino NÃO for macOS, **remova ou
+  condicione** o hook.
+- **Scripts locais** (`~/bin/claude-notify`) → se não existir nesta máquina,
+  recrie-o ou remova o hook que o chama.
 
 ## Fase 6 — Verificação
 1. `claude plugin list` mostra os plugins esperados (habilitados/desabilitados).

@@ -224,8 +224,11 @@ quebrar o que já existe), **verificação** (testar, não presumir) e **backup*
 
 ## Garantias do processo
 
-- **Cross-platform:** o Claude detecta macOS / Linux nativo / Windows+WSL e usa
-  `brew` / `apt` / `dnf` / `pacman` conforme o caso, pulando as linhas WSL-only.
+- **Cross-platform bidirecional:** funciona nos dois sentidos (WSL→macOS **e**
+  macOS→WSL). Cada linha específica de plataforma é rotulada
+  (`macos`/`wsl_windows`/`debian_binary_rename`); no destino, o Claude remove as
+  que não pertencem ao SO de lá, ajusta os aliases `bat`/`fd` conforme o destino
+  (adiciona no Debian, remove no macOS) e usa `brew`/`apt`/`dnf`/`pacman`.
 - **Não precisa ter zsh no destino:** se faltar, o Claude pergunta e instala (e
   oferece torná-lo o shell padrão).
 - **Idempotente:** o que já existe é detectado e pulado — nada é reinstalado ou

@@ -80,13 +80,27 @@
   },
 
   "non_portable_markers": {
-    "_comment": "Trechos em settings/hooks que só funcionam no WSL/Windows ou dependem de scripts locais. O Claude no destino deve revisar/condicionar.",
-    "patterns": [
+    "_comment": "Trechos em settings/hooks específicos de UMA plataforma ou de scripts locais. Rotulados por plataforma — no destino, removem-se/condicionam-se os que não correspondem ao SO de lá. Bidirecional (WSL↔macOS).",
+    "wsl_windows": [
       "wsl-screenshot-cli",
       "powershell.exe",
       "/mnt/c",
-      "~/bin/claude-notify",
+      "/mnt/wslg",
+      "wslpath",
       ".ps1"
+    ],
+    "macos": [
+      "pbcopy",
+      "pbpaste",
+      "osascript",
+      "/opt/homebrew",
+      "open -a",
+      "defaults write",
+      "/Users/",
+      "com.apple."
+    ],
+    "local_scripts": [
+      "~/bin/claude-notify"
     ]
   },
 

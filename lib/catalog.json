@@ -196,7 +196,7 @@
   },
 
   "platform_specific_patterns": {
-    "_comment": "Linhas do .zshrc que contêm estes trechos são específicas de WSL/Windows e devem ser REMOVIDAS ou comentadas ao portar para macOS/Linux nativo.",
+    "_comment": "Trechos no .zshrc específicos de UMA plataforma. Cada grupo é rotulado pela plataforma de origem. No destino, removem-se as linhas cuja plataforma NÃO corresponde ao SO de lá. Funciona nos dois sentidos (WSL→Mac e Mac→WSL).",
     "wsl_windows": [
       "/mnt/c",
       "/mnt/wslg",
@@ -212,8 +212,25 @@
       "pastepng",
       "pscreen"
     ],
+    "macos": [
+      "/opt/homebrew",
+      "brew shellenv",
+      "pbcopy",
+      "pbpaste",
+      "osascript",
+      "open -a",
+      "defaults write",
+      "defaults read",
+      "/usr/libexec/java_home",
+      "/Users/",
+      "ls -G",
+      "LSCOLORS",
+      "/Applications/",
+      "iTerm",
+      "com.apple."
+    ],
     "debian_binary_rename": {
-      "_comment": "Aliases que existem só por causa de binários renomeados no Debian. No macOS devem ser REMOVIDOS.",
+      "_comment": "Aliases que existem só por causa de binários renomeados no Debian/Ubuntu (bat→batcat, fd→fdfind). No DESTINO: manter/adicionar se for Debian; remover se for macOS/outros.",
       "patterns": ["alias bat=\"batcat\"", "alias fd=\"fdfind\"", "batcat", "fdfind"]
     }
   }

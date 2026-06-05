@@ -99,16 +99,30 @@ def parse_zshrc(zshrc: Path) -> dict:
 
 
 def scan_platform_lines(zshrc: Path, catalog: dict) -> list[dict]:
-    """Acha linhas do .zshrc que são específicas de WSL/Windows (não portáveis)."""
+    """Acha linhas específicas de plataforma e ROTULA cada uma com sua plataforma.
+
+    Varre todos os grupos (macos, wsl_windows, debian_binary_rename), não só WSL —
+    é o que torna o fluxo bidirecional: o destino remove as linhas cuja plataforma
+    não corresponde ao SO de lá.
+    """
     if not zshrc.exists():
         return []
-    patterns = catalog["platform_specific_patterns"]["wsl_windows"]
-    patterns += catalog["platform_specific_patterns"]["debian_binary_rename"]["patterns"]
+    psp = catalog["platform_specific_patterns"]
+    # Ordem importa: wsl_windows ANTES de macos. Um path do Windows montado
+    # ("/mnt/c/Users/...") contém "/Users/", que também é marcador macOS — o
+    # marcador WSL é mais específico e deve vencer o desempate.
+    groups = {
+        "wsl_windows": psp.get("wsl_windows", []),
+        "macos": psp.get("macos", []),
+        "debian_binary_rename": psp.get("debian_binary_rename", {}).get("patterns", []),
+    }
     hits = []
     for i, line in enumerate(zshrc.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
-        for pat in patterns:
-            if pat in line:
-                hits.append({"line": i, "pattern": pat, "text": line.strip()})
+        for platform_name, pats in groups.items():
+            matched = next((p for p in pats if p in line), None)
+            if matched:
+                hits.append({"line": i, "pattern": matched,
+                             "platform": platform_name, "text": line.strip()})
                 break
     return hits
 
@@ -244,7 +258,7 @@ def build_manifest(catalog, zsh_info, detected, platform_lines, copied, src_os) 
         "frameworks": frameworks,
         "dotfiles_copied": copied,
         "platform_specific_lines": platform_lines,
-        "_note": "Gerado por export.sh. As linhas em 'platform_specific_lines' são específicas de WSL/Windows e NÃO devem ser aplicadas em macOS/Linux nativo.",
+        "_note": "Gerado por export.sh. Cada item de 'platform_specific_lines' tem um campo 'platform' (macos/wsl_windows/debian_binary_rename). No destino, REMOVA as linhas cuja plataforma não corresponde ao SO de lá. Bidirecional.",
     }
 
 
@@ -253,6 +267,13 @@ def render_setup_md(manifest: dict) -> str:
     plat_count = len(manifest["platform_specific_lines"])
     theme = manifest["theme"]
     theme_line = theme["name"] if theme else "(nenhum)"
+    src_os = manifest["generated_from"]["os"]
+
+    # Quebra das linhas específicas por plataforma (para o roteiro bidirecional).
+    by_plat: dict = {}
+    for ln in manifest["platform_specific_lines"]:
+        by_plat.setdefault(ln.get("platform", "outro"), []).append(ln)
+    plat_breakdown = ", ".join(f"{p}: {len(v)}" for p, v in by_plat.items()) or "(nenhuma)"
 
     # Tabela de verificação: cada ferramenta com seu smoke-test (campo `verify`).
     verify_rows = []
@@ -269,13 +290,16 @@ def render_setup_md(manifest: dict) -> str:
 
 > **Para o Claude Code:** este arquivo é um roteiro executável. Leia-o por
 > inteiro junto com `manifest.json` (no mesmo diretório) antes de agir.
-> NÃO copie o `.zshrc` de origem cru — ele foi gerado em WSL/Ubuntu e contém
-> linhas que quebram em macOS/Linux nativo. Siga as regras abaixo.
+> NÃO copie o `.zshrc` de origem cru — ele foi gerado em **{src_os}** e contém
+> linhas específicas dessa plataforma que quebram em outros SOs. O fluxo é
+> **bidirecional** (WSL↔macOS↔Linux): na Fase 4 você remove as linhas cuja
+> plataforma não corresponde a ESTE destino.
 
 ## Contexto da origem
-- SO de origem: **{manifest['generated_from']['os']}** (WSL: {manifest['generated_from']['is_wsl']})
+- SO de origem: **{src_os}** (WSL: {manifest['generated_from']['is_wsl']})
 - Framework: **{manifest['framework']}**
 - Tema ativo: **{theme_line}**
+- Linhas específicas de plataforma encontradas: {plat_breakdown}
 
 ## Dois princípios que valem para TODAS as fases
 
@@ -344,7 +368,14 @@ Se já existir, pule. Ele deve vir ANTES de plugins e temas.
 Para cada item de `cli_tools` marcado como FALTANDO na Fase 0, instale com o
 comando do SO atual (`install.macos` no Mac, `install.debian` no Linux/apt,
 `install.fallback` se necessário). Respeite o `note` — em especial **bat** e
-**fd**: no macOS os binários se chamam `bat`/`fd` (sem alias de renomeação).
+**fd**, cujo nome de binário depende do destino:
+- **Destino Debian/Ubuntu/WSL:** os binários instalam como `batcat`/`fdfind`.
+  Para usar `bat`/`fd`, **ADICIONE** ao `.zshrc`: `alias bat="batcat"` e
+  `alias fd="fdfind"` (mesmo que a origem não tivesse esses aliases — ex.: origem
+  macOS).
+- **Destino macOS/Fedora/Arch:** os binários já se chamam `bat`/`fd` — **NÃO**
+  adicione esses aliases (e remova-os se vieram da origem).
+
 Após cada instalação, rode imediatamente o `verify` daquele item; se falhar,
 pare e investigue antes de seguir.
 
@@ -356,15 +387,23 @@ pare e investigue antes de seguir.
   quer (a) copiar o arquivo do acesso comprado, ou (b) usar a alternativa
   gratuita `dracula`. Veja o `note` do tema no manifest.
 
-### Fase 4 — Montar o .zshrc adaptado
-Use `dotfiles/.zshrc` como BASE, mas **remova/comente** as {plat_count} linhas
-específicas de plataforma listadas em `manifest.json → platform_specific_lines`:
-- Aliases de binário renomeado (`alias bat="batcat"`, `alias fd="fdfind"`) → **remover no macOS**.
-- Tudo que referencia `/mnt/c`, `/mnt/wslg`, `PULSE_SERVER`, `MESA_D3D12`,
-  `WARP_ENABLE_WAYLAND`, `powershell.exe`, `wslpath` → **remover**.
-- Mantenha: aliases de produtividade (pnpm, git), hooks (`load-nvmrc`), prompt
-  custom, e os blocos de version managers que existirem nesta máquina.
-- Faça backup do `~/.zshrc` atual antes de escrever.
+### Fase 4 — Montar o .zshrc adaptado (BIDIRECIONAL)
+Use `dotfiles/.zshrc` como BASE. As {plat_count} linhas específicas de plataforma
+({plat_breakdown}) estão em `manifest.json → platform_specific_lines`, cada uma
+com um campo `platform`. **Detecte o SO deste destino e remova as linhas cuja
+`platform` NÃO corresponde a ele:**
+- `platform: macos` (`/opt/homebrew`, `brew shellenv`, `pbcopy`, `pbpaste`,
+  `open -a`, `defaults`, `/Users/`, `ls -G`, `LSCOLORS`) → **remover se o destino
+  NÃO for macOS**.
+- `platform: wsl_windows` (`/mnt/c`, `/mnt/wslg`, `PULSE_SERVER`, `MESA_D3D12`,
+  `WARP_ENABLE_WAYLAND`, `powershell.exe`, `wslpath`) → **remover se o destino
+  NÃO for WSL/Windows**.
+- `platform: debian_binary_rename` (`alias bat="batcat"`, `alias fd="fdfind"`) →
+  **manter/adicionar se o destino for Debian/Ubuntu; remover se for macOS/outros**
+  (ver Fase 2).
+- **Mantenha** o que é portável: aliases de produtividade (pnpm, git), hooks
+  (`load-nvmrc`), prompt custom, e os blocos de version managers presentes aqui.
+- O backup já foi feito na Fase 0.5; ainda assim confirme antes de sobrescrever.
 
 ### Fase 5 — Configs de apps
 Copie os diretórios em `dotfiles/config/` para `~/.config/` (micro, glow, etc.),

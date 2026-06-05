@@ -2,13 +2,16 @@
 
 > **Para o Claude Code:** este arquivo é um roteiro executável. Leia-o por
 > inteiro junto com `manifest.json` (no mesmo diretório) antes de agir.
-> NÃO copie o `.zshrc` de origem cru — ele foi gerado em WSL/Ubuntu e contém
-> linhas que quebram em macOS/Linux nativo. Siga as regras abaixo.
+> NÃO copie o `.zshrc` de origem cru — ele foi gerado em **debian** e contém
+> linhas específicas dessa plataforma que quebram em outros SOs. O fluxo é
+> **bidirecional** (WSL↔macOS↔Linux): na Fase 4 você remove as linhas cuja
+> plataforma não corresponde a ESTE destino.
 
 ## Contexto da origem
 - SO de origem: **debian** (WSL: True)
 - Framework: **oh-my-zsh**
 - Tema ativo: **dracula-pro**
+- Linhas específicas de plataforma encontradas: wsl_windows: 10, debian_binary_rename: 2
 
 ## Dois princípios que valem para TODAS as fases
 
@@ -77,7 +80,14 @@ Se já existir, pule. Ele deve vir ANTES de plugins e temas.
 Para cada item de `cli_tools` marcado como FALTANDO na Fase 0, instale com o
 comando do SO atual (`install.macos` no Mac, `install.debian` no Linux/apt,
 `install.fallback` se necessário). Respeite o `note` — em especial **bat** e
-**fd**: no macOS os binários se chamam `bat`/`fd` (sem alias de renomeação).
+**fd**, cujo nome de binário depende do destino:
+- **Destino Debian/Ubuntu/WSL:** os binários instalam como `batcat`/`fdfind`.
+  Para usar `bat`/`fd`, **ADICIONE** ao `.zshrc`: `alias bat="batcat"` e
+  `alias fd="fdfind"` (mesmo que a origem não tivesse esses aliases — ex.: origem
+  macOS).
+- **Destino macOS/Fedora/Arch:** os binários já se chamam `bat`/`fd` — **NÃO**
+  adicione esses aliases (e remova-os se vieram da origem).
+
 Após cada instalação, rode imediatamente o `verify` daquele item; se falhar,
 pare e investigue antes de seguir.
 
@@ -89,15 +99,23 @@ pare e investigue antes de seguir.
   quer (a) copiar o arquivo do acesso comprado, ou (b) usar a alternativa
   gratuita `dracula`. Veja o `note` do tema no manifest.
 
-### Fase 4 — Montar o .zshrc adaptado
-Use `dotfiles/.zshrc` como BASE, mas **remova/comente** as 12 linhas
-específicas de plataforma listadas em `manifest.json → platform_specific_lines`:
-- Aliases de binário renomeado (`alias bat="batcat"`, `alias fd="fdfind"`) → **remover no macOS**.
-- Tudo que referencia `/mnt/c`, `/mnt/wslg`, `PULSE_SERVER`, `MESA_D3D12`,
-  `WARP_ENABLE_WAYLAND`, `powershell.exe`, `wslpath` → **remover**.
-- Mantenha: aliases de produtividade (pnpm, git), hooks (`load-nvmrc`), prompt
-  custom, e os blocos de version managers que existirem nesta máquina.
-- Faça backup do `~/.zshrc` atual antes de escrever.
+### Fase 4 — Montar o .zshrc adaptado (BIDIRECIONAL)
+Use `dotfiles/.zshrc` como BASE. As 12 linhas específicas de plataforma
+(wsl_windows: 10, debian_binary_rename: 2) estão em `manifest.json → platform_specific_lines`, cada uma
+com um campo `platform`. **Detecte o SO deste destino e remova as linhas cuja
+`platform` NÃO corresponde a ele:**
+- `platform: macos` (`/opt/homebrew`, `brew shellenv`, `pbcopy`, `pbpaste`,
+  `open -a`, `defaults`, `/Users/`, `ls -G`, `LSCOLORS`) → **remover se o destino
+  NÃO for macOS**.
+- `platform: wsl_windows` (`/mnt/c`, `/mnt/wslg`, `PULSE_SERVER`, `MESA_D3D12`,
+  `WARP_ENABLE_WAYLAND`, `powershell.exe`, `wslpath`) → **remover se o destino
+  NÃO for WSL/Windows**.
+- `platform: debian_binary_rename` (`alias bat="batcat"`, `alias fd="fdfind"`) →
+  **manter/adicionar se o destino for Debian/Ubuntu; remover se for macOS/outros**
+  (ver Fase 2).
+- **Mantenha** o que é portável: aliases de produtividade (pnpm, git), hooks
+  (`load-nvmrc`), prompt custom, e os blocos de version managers presentes aqui.
+- O backup já foi feito na Fase 0.5; ainda assim confirme antes de sobrescrever.
 
 ### Fase 5 — Configs de apps
 Copie os diretórios em `dotfiles/config/` para `~/.config/` (micro, glow, etc.),

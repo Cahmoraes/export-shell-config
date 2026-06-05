@@ -97,6 +97,15 @@ class TestNonPortableAndSecurity(unittest.TestCase):
         settings = {"hooks": {"S": [{"command": "wsl-screenshot-cli start --daemon"}]}}
         self.assertIn("wsl-screenshot-cli", ce.scan_non_portable(settings, cat))
 
+    def test_detects_macos_marker(self):
+        # Fluxo reverso: hooks macOS num settings de origem Mac devem ser marcados.
+        cat = ce.load_catalog()
+        settings = {"hooks": {"S": [{"command": "osascript -e 'display notification'"}]},
+                    "statusLine": {"command": "/opt/homebrew/bin/foo"}}
+        hits = ce.scan_non_portable(settings, cat)
+        self.assertIn("osascript", hits)
+        self.assertIn("/opt/homebrew", hits)
+
     def test_finds_security_flags(self):
         cat = ce.load_catalog()
         settings = {"permissions": {"defaultMode": "bypassPermissions"},

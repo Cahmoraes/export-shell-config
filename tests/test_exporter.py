@@ -99,6 +99,38 @@ class TestScanPlatformLines(unittest.TestCase):
         self.assertEqual(hits[0]["line"], 1)
         self.assertIn("MESA_D3D12", hits[0]["pattern"])
 
+    def test_detects_macos_lines_bidirectional(self):
+        # Fluxo reverso: origem macOS → estas linhas devem ser marcadas.
+        zshrc = write(self.tmp / ".zshrc", (
+            'eval "$(/opt/homebrew/bin/brew shellenv)"\n'
+            'alias copy="pbcopy"\n'
+            'alias ls="ls -G"\n'
+            'export EDITOR=micro\n'           # portável: NÃO deve aparecer
+        ))
+        hits = exporter.scan_platform_lines(zshrc, self.catalog)
+        texts = [h["text"] for h in hits]
+        self.assertTrue(any("/opt/homebrew" in t for t in texts))
+        self.assertTrue(any("pbcopy" in t for t in texts))
+        self.assertFalse(any("EDITOR=micro" in t for t in texts))
+
+    def test_wsl_path_with_users_not_misclassified_as_macos(self):
+        # "/mnt/c/Users/..." contém "/Users/" (marcador macOS) mas é WSL puro.
+        zshrc = write(self.tmp / ".zshrc",
+                      'VSCODE_BIN="/mnt/c/Users/ike/AppData/Local/bin"\n')
+        hits = exporter.scan_platform_lines(zshrc, self.catalog)
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(hits[0]["platform"], "wsl_windows")
+
+    def test_hit_has_platform_label(self):
+        zshrc = write(self.tmp / ".zshrc", (
+            'export PULSE_SERVER=/mnt/wslg/x\n'   # wsl_windows
+            'alias copy="pbcopy"\n'               # macos
+        ))
+        hits = exporter.scan_platform_lines(zshrc, self.catalog)
+        plats = {h["platform"] for h in hits}
+        self.assertIn("wsl_windows", plats)
+        self.assertIn("macos", plats)
+
 
 class TestDetectTools(unittest.TestCase):
     def test_detects_only_present_binaries(self):

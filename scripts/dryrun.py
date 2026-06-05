@@ -9,7 +9,7 @@ Lê profile/manifest.json e, para o SO atual:
     comando de instalação SERIA usado;
   - checa se os plugins do OMZ já estão em disco;
   - resolve o status do tema (conhecido / manual / faltando);
-  - lista quantas linhas WSL-only seriam removidas do .zshrc.
+  - lista as linhas específicas de plataforma (por SO) a ajustar no .zshrc.
 
 Nada é executado além de checagens 'command -v' e leitura de paths.
 Código de saída: 0 sempre (é diagnóstico). Use-o antes do setup real.
@@ -151,12 +151,16 @@ def main() -> int:
         if theme.get("manual"):
             print(DIM(f"    → o setup vai PERGUNTAR: copiar o pago ou usar alternativa gratuita."))
 
-    # ── Linhas WSL-only ──────────────────────────────────────────────
+    # ── Linhas específicas de plataforma ─────────────────────────────
     header("Linhas específicas de plataforma (seriam removidas do .zshrc)")
     lines = manifest["platform_specific_lines"]
-    print(f"  {len(lines)} linha(s) marcadas como WSL/Windows-only:")
+    from collections import Counter
+    by_plat = Counter(ln.get("platform", "?") for ln in lines)
+    breakdown = ", ".join(f"{p}: {n}" for p, n in by_plat.items()) or "nenhuma"
+    print(f"  {len(lines)} linha(s) específicas de plataforma ({breakdown}):")
     for ln in lines[:6]:
-        print(DIM(f"    L{ln['line']:>3} [{ln['pattern']}] {ln['text'][:50]}"))
+        plat = ln.get("platform", "?")
+        print(DIM(f"    L{ln['line']:>3} [{plat}] {ln['text'][:50]}"))
     if len(lines) > 6:
         print(DIM(f"    … e mais {len(lines) - 6}"))
 
@@ -164,7 +168,7 @@ def main() -> int:
     header("Resumo do plano")
     print(f"  {GREEN(str(summary['present']))} ferramenta(s) já presente(s) → serão puladas")
     print(f"  {YELLOW(str(summary['missing']))} ferramenta(s) faltando → seriam instaladas")
-    print(f"  {len(lines)} linha(s) WSL-only → seriam removidas do .zshrc")
+    print(f"  {len(lines)} linha(s) específicas de plataforma → ajustadas conforme o destino")
     print()
     print(BOLD(GREEN("DRY-RUN concluído. Nada foi instalado ou alterado.")))
     print(DIM("Para executar de verdade: abra o Claude Code e diga "

@@ -265,63 +265,75 @@
     {
       "line": 54,
       "pattern": "WARP_ENABLE_WAYLAND",
+      "platform": "wsl_windows",
       "text": "export WARP_ENABLE_WAYLAND=1"
     },
     {
       "line": 55,
       "pattern": "MESA_D3D12",
+      "platform": "wsl_windows",
       "text": "export MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA"
     },
     {
       "line": 59,
       "pattern": "WarpTerminal",
+      "platform": "wsl_windows",
       "text": "if [[ \"$TERM_PROGRAM\" == \"WarpTerminal\" ]]; then"
     },
     {
       "line": 60,
       "pattern": "SourcedRcFileForWarp",
+      "platform": "wsl_windows",
       "text": "printf '\\ePsf{\"hook\":\"SourcedRcFileForWarp\",\"value\":{\"shell\":\"zsh\"}}\\x9c'"
     },
     {
       "line": 64,
       "pattern": "alias bat=\"batcat\"",
+      "platform": "debian_binary_rename",
       "text": "alias bat=\"batcat\""
     },
     {
       "line": 65,
       "pattern": "alias fd=\"fdfind\"",
+      "platform": "debian_binary_rename",
       "text": "alias fd=\"fdfind\""
     },
     {
       "line": 136,
       "pattern": "/mnt/c",
+      "platform": "wsl_windows",
       "text": "VSCODE_BIN=\"/mnt/c/Users/ike_m/AppData/Local/Programs/Microsoft VS Code/bin\""
     },
     {
       "line": 137,
       "pattern": "VSCODE_BIN",
+      "platform": "wsl_windows",
       "text": "[[ -d \"$VSCODE_BIN\" ]] && path=(\"$VSCODE_BIN\" $path)"
     },
     {
       "line": 141,
       "pattern": "nice-vscode",
+      "platform": "wsl_windows",
       "text": "alias nice-vscode='bash ~/nice-vscode.sh'"
     },
     {
       "line": 142,
       "pattern": "nice-vscode",
+      "platform": "wsl_windows",
       "text": "alias nice-vscode-restore='bash ~/nice-vscode.sh 0'"
     },
     {
       "line": 143,
       "pattern": "pastepng",
+      "platform": "wsl_windows",
       "text": "alias pscreen='pastepng /tmp/screen.png && echo /tmp/screen.png'"
     },
     {
       "line": 146,
       "pattern": "/mnt/wslg",
+      "platform": "wsl_windows",
       "text": "export PULSE_SERVER=unix:/mnt/wslg/runtime-dir/pulse/native"
     }
   ],
-  "_note": "Gerado por export.sh. As linhas em 'platform_specific_lines' são específicas de WSL/Windows e NÃO devem ser aplicadas em macOS/Linux nativo."
+  "_note": "Gerado por export.sh. Cada item de 'platform_specific_lines' tem um campo 'platform' (macos/wsl_windows/debian_binary_rename). No destino, REMOVA as linhas cuja plataforma não corresponde ao SO de lá. Bidirecional."
 }
