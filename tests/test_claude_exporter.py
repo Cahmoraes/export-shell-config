@@ -41,6 +41,45 @@ class TestCatalog(unittest.TestCase):
         self.assertIn("CLAUDE.local.md", cat["sensitive_never_export"]["files"])
 
 
+class TestHookDependencies(unittest.TestCase):
+    def test_catalog_has_token_crunch(self):
+        cat = ce.load_catalog()
+        self.assertIn("hook_dependencies", cat)
+        tc = cat["hook_dependencies"]["token-crunch"]
+        for k in ("binary", "detect_in_hooks", "install"):
+            self.assertIn(k, tc, f"token-crunch sem {k}")
+
+    def test_included_only_when_command_in_hooks(self):
+        cat = ce.load_catalog()
+        # token-crunch presente nos hooks → entra; binário existe na origem.
+        settings = {"hooks": {"PostToolUse": [{"hooks": [
+            {"type": "command", "command": "token-crunch post"}]}]}}
+        with mock.patch.object(ce, "which", return_value="/x/token-crunch"):
+            deps = ce.detect_hook_dependencies(cat, settings)
+        names = {d["name"] for d in deps}
+        self.assertIn("token-crunch", names)
+        tc = next(d for d in deps if d["name"] == "token-crunch")
+        self.assertTrue(tc["installed_on_source"])
+
+    def test_excluded_when_command_absent(self):
+        cat = ce.load_catalog()
+        # Nenhum hook chama token-crunch → não exporta a dependência.
+        settings = {"hooks": {"Stop": [{"hooks": [
+            {"type": "command", "command": "echo done"}]}]}}
+        with mock.patch.object(ce, "which", return_value=None):
+            deps = ce.detect_hook_dependencies(cat, settings)
+        self.assertEqual(deps, [])
+
+    def test_missing_binary_flagged(self):
+        cat = ce.load_catalog()
+        settings = {"hooks": {"PreToolUse": [{"hooks": [
+            {"type": "command", "command": "token-crunch pre"}]}]}}
+        with mock.patch.object(ce, "which", return_value=None):
+            deps = ce.detect_hook_dependencies(cat, settings)
+        tc = next(d for d in deps if d["name"] == "token-crunch")
+        self.assertFalse(tc["installed_on_source"])
+
+
 class TestSanitize(unittest.TestCase):
     def test_removes_secret_keys(self):
         settings = {
@@ -143,17 +182,38 @@ class TestManifestAndSetup(unittest.TestCase):
                 "describe": "TS", "installed_on_source": True,
                 "source_path": "/x", "install": {"pnpm": "pnpm add -g x"}}]
         node = {"pnpm": ["typescript@6.0.3"], "npm": []}
+        hook_deps = [{"name": "token-crunch", "binary": "token-crunch",
+                      "describe": "compressão de tokens", "source": "https://x",
+                      "verify": "token-crunch version", "installed_on_source": True,
+                      "source_path": "/x/token-crunch",
+                      "install": {"go": "go install token-crunch@latest"},
+                      "install_note": "sem go: prebuilt", "post_install": "hooks já vêm no settings"}]
         return ce.build_manifest(settings, plugins_data, marketplaces, lsp, node,
                                  ["wsl-screenshot-cli"],
                                  {"permissions.defaultMode": "bypassPermissions"},
-                                 ["my_secret"], ["settings.json"])
+                                 ["my_secret"], ["settings.json"], hook_deps)
 
     def test_manifest_keys(self):
         m = self._manifest()
-        for k in ("marketplaces", "plugins", "language_servers",
+        for k in ("marketplaces", "plugins", "language_servers", "hook_dependencies",
                   "global_node_packages", "security_flags",
                   "non_portable_markers_found", "secrets_removed_from_settings"):
             self.assertIn(k, m)
+
+    def test_setup_md_renders_hook_dependencies(self):
+        md = ce.render_setup_md(self._manifest())
+        self.assertIn("## Fase 3.5 — Dependências de binário dos hooks", md)
+        self.assertIn("token-crunch", md)
+        self.assertIn("go install token-crunch@latest", md)
+        self.assertIn("command -v", md)   # idempotência reforçada na fase
+
+    def test_setup_md_no_hook_phase_when_empty(self):
+        # Sem dependências de hooks, a Fase 3.5 não deve aparecer.
+        settings = {"enabledPlugins": {}}
+        m = ce.build_manifest(settings, {}, {}, [], {"pnpm": [], "npm": []},
+                              [], {}, [], ["settings.json"], [])
+        md = ce.render_setup_md(m)
+        self.assertNotIn("## Fase 3.5 — Dependências de binário dos hooks", md)
 
     def test_plugin_enabled_flag(self):
         m = self._manifest()

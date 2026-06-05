@@ -6,6 +6,7 @@ portável, para ser reconstruída em outra máquina pelo próprio Claude.
 Exporta (sem segredos):
   - plugins instalados + marketplaces de origem (para reinstalar via `claude plugin`)
   - quais language servers cada plugin LSP exige + como instalá-los
+  - quais binários os hooks do settings.json exigem + como instalá-los
   - pacotes node globais (pnpm/npm) — onde moram as libs de TS LSP
   - settings.json SANITIZADO (paths do $HOME viram ${HOME}; segredos removidos)
   - statusline, keybindings, hooks, agents, skills (config/identidade)
@@ -102,6 +103,41 @@ def detect_language_servers(catalog: dict, enabled_plugins: dict) -> list:
             "installed_on_source": bool(found),
             "source_path": found,
             "install": meta["install"],
+        })
+    return result
+
+
+def detect_hook_dependencies(catalog: dict, settings: dict) -> list:
+    """Acha binários externos que os HOOKS do settings.json invocam.
+
+    Análogo a detect_language_servers, mas para hooks: inclui só as dependências
+    cujo comando aparece de fato nos hooks (data-driven — o catálogo pode listar
+    vários binários conhecidos; o export traz só os realmente usados aqui). Os
+    hooks em si já viajam via config/settings.json; aqui só registramos qual
+    binário o destino precisa instalar no PATH para o hook não falhar.
+    """
+    deps = catalog.get("hook_dependencies", {})
+    hooks_text = json.dumps(settings.get("hooks", {}), ensure_ascii=False)
+    result = []
+    for name, meta in deps.items():
+        if name.startswith("_") or not isinstance(meta, dict):
+            continue
+        marker = meta.get("detect_in_hooks", name)
+        if marker not in hooks_text:
+            continue
+        binary = meta["binary"]
+        found = which(binary)
+        result.append({
+            "name": name,
+            "binary": binary,
+            "describe": meta.get("describe"),
+            "source": meta.get("source"),
+            "verify": meta.get("verify"),
+            "installed_on_source": bool(found),
+            "source_path": found,
+            "install": meta["install"],
+            "install_note": meta.get("install_note"),
+            "post_install": meta.get("post_install"),
         })
     return result
 
@@ -228,7 +264,8 @@ def copy_claude_config(catalog: dict, sanitized_settings: dict) -> list:
 
 
 def build_manifest(settings, plugins_data, marketplaces, lsp, node_pkgs,
-                   non_portable, security, removed_secrets, copied) -> dict:
+                   non_portable, security, removed_secrets, copied,
+                   hook_deps=None) -> dict:
     enabled = settings.get("enabledPlugins", {})
     plugins = []
     for full_name, installs in (plugins_data or {}).get("plugins", {}).items():
@@ -250,13 +287,15 @@ def build_manifest(settings, plugins_data, marketplaces, lsp, node_pkgs,
         "marketplaces": mkts,
         "plugins": plugins,
         "language_servers": lsp,
+        "hook_dependencies": hook_deps or [],
         "global_node_packages": node_pkgs,
         "security_flags": security,
         "non_portable_markers_found": non_portable,
         "secrets_removed_from_settings": removed_secrets,
         "config_files_copied": copied,
         "_note": "Reconstrua com `claude plugin marketplace add` + `claude plugin install`. "
-                 "Instale os language_servers (binários) para os plugins LSP funcionarem. "
+                 "Instale os language_servers (binários) para os plugins LSP funcionarem e "
+                 "os hook_dependencies (binários) para os hooks do settings.json não falharem. "
                  "Revise security_flags e non_portable_markers antes de aplicar.",
     }
 
@@ -274,6 +313,42 @@ def render_setup_md(m: dict) -> str:
     sec_lines = "\n".join(f"  - `{k}` = `{json.dumps(v)}`" for k, v in m["security_flags"].items()) \
         or "  - (nenhuma)"
     np_lines = ", ".join(f"`{p}`" for p in m["non_portable_markers_found"]) or "(nenhum)"
+
+    hook_deps = m.get("hook_dependencies", [])
+    if hook_deps:
+        rows = "\n".join(
+            f"| `{d['name']}` | `{d['binary']}` | "
+            f"{'sim' if d['installed_on_source'] else 'NÃO'} | {d.get('describe', '')} |"
+            for d in hook_deps)
+        blocks = []
+        for d in hook_deps:
+            lines = [f"- **`{d['name']}`** — instale o binário "
+                     f"(escolha o gerenciador que existe nesta máquina):"]
+            for k, cmd in d["install"].items():
+                lines.append(f"  - ({k}) `{cmd}`")
+            if d.get("install_note"):
+                lines.append(f"  - _{d['install_note']}_")
+            if d.get("verify"):
+                lines.append(f"  - Verifique: `{d['verify']}`")
+            if d.get("post_install"):
+                lines.append(f"  - {d['post_install']}")
+            blocks.append("\n".join(lines))
+        hook_deps_section = f"""
+## Fase 3.5 — Dependências de binário dos hooks
+Alguns hooks do `settings.json` chamam binários externos que precisam existir no
+PATH (senão o hook falha silenciosamente a cada chamada). Os hooks em si já vêm
+no `config/settings.json` (Fase 4) — aqui você só instala os binários.
+**Idempotência:** rode `command -v <binário>` antes; pule o que já existe
+(registre "já presente (vX)").
+
+| Dependência | Binário | Estava na origem? | O que é |
+|---|---|---|---|
+{rows}
+
+{chr(10).join(blocks)}
+"""
+    else:
+        hook_deps_section = ""
 
     return f"""# CLAUDE_SETUP — Reconstruir a config do Claude Code
 
@@ -302,6 +377,8 @@ def render_setup_md(m: dict) -> str:
   no profile).
 - Gerenciadores conforme os language servers necessários: `pnpm`/`npm` (TS),
   `pip`/`pnpm` (pyright), `go` (gopls), `rustup`/`cargo` (rust-analyzer).
+- Toolchain das dependências de binário dos hooks (Fase 3.5), se houver — ex.:
+  `go` para o `token-crunch`.
 
 ## Fase 1 — Marketplaces
 Rode `claude plugin marketplace list` primeiro; adicione só os que faltam:
@@ -339,7 +416,7 @@ As libs de TS na origem vinham de pacotes node globais
 o disponível. Exemplos equivalentes:
 - pnpm: `pnpm add -g typescript-language-server typescript`
 - npm:  `npm install -g typescript-language-server typescript`
-
+{hook_deps_section}
 ## Fase 4 — settings.json (com cuidado)
 Mescle `config/settings.json` no `~/.claude/settings.json`. Os paths usam
 `${{HOME}}` — confirme que expandem nesta máquina.
@@ -353,6 +430,10 @@ Mescle `config/settings.json` no `~/.claude/settings.json`. Os paths usam
 ## Fase 5 — Hooks, statusline, keybindings, agents, skills
 Copie de `config/` para `~/.claude/`. **Atenção a trechos específicos de
 plataforma** encontrados: {np_lines}
+
+Hooks que chamam binários externos só funcionam se o binário existir no PATH —
+garanta que as dependências da Fase 3.5 foram instaladas antes de confiar nesses
+hooks.
 
 Detecte o SO deste destino e trate cada marcador conforme a plataforma a que
 pertence (regra simétrica — vale nos dois sentidos):
@@ -397,6 +478,12 @@ def main() -> int:
     print(f"→ Plugins: {len(plugins_data.get('plugins', {}))} | "
           f"marketplaces: {len(marketplaces)} | language servers LSP: {len(lsp)}")
 
+    hook_deps = detect_hook_dependencies(catalog, settings)
+    if hook_deps:
+        print("→ Dependências de binário dos hooks: " + ", ".join(
+            f"{d['name']} ({'na origem' if d['installed_on_source'] else 'AUSENTE aqui'})"
+            for d in hook_deps))
+
     node_pkgs = detect_global_node_packages()
     print(f"→ Pacotes node globais: pnpm={len(node_pkgs['pnpm'])} npm={len(node_pkgs['npm'])}")
 
@@ -411,7 +498,8 @@ def main() -> int:
     print(f"→ Config copiada: {', '.join(copied)}")
 
     manifest = build_manifest(settings, plugins_data, marketplaces, lsp,
-                              node_pkgs, non_portable, security, removed, copied)
+                              node_pkgs, non_portable, security, removed, copied,
+                              hook_deps)
     (OUT / "claude-manifest.json").write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
     (OUT / "CLAUDE_SETUP.md").write_text(render_setup_md(manifest), encoding="utf-8")

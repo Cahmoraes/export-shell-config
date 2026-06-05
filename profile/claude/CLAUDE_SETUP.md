@@ -25,6 +25,8 @@
   no profile).
 - Gerenciadores conforme os language servers necessários: `pnpm`/`npm` (TS),
   `pip`/`pnpm` (pyright), `go` (gopls), `rustup`/`cargo` (rust-analyzer).
+- Toolchain das dependências de binário dos hooks (Fase 3.5), se houver — ex.:
+  `go` para o `token-crunch`.
 
 ## Fase 1 — Marketplaces
 Rode `claude plugin marketplace list` primeiro; adicione só os que faltam:
@@ -70,6 +72,23 @@ o disponível. Exemplos equivalentes:
 - pnpm: `pnpm add -g typescript-language-server typescript`
 - npm:  `npm install -g typescript-language-server typescript`
 
+## Fase 3.5 — Dependências de binário dos hooks
+Alguns hooks do `settings.json` chamam binários externos que precisam existir no
+PATH (senão o hook falha silenciosamente a cada chamada). Os hooks em si já vêm
+no `config/settings.json` (Fase 4) — aqui você só instala os binários.
+**Idempotência:** rode `command -v <binário>` antes; pule o que já existe
+(registre "já presente (vX)").
+
+| Dependência | Binário | Estava na origem? | O que é |
+|---|---|---|---|
+| `token-crunch` | `token-crunch` | sim | Motor de compressão de tokens para o Claude Code (dedup + structure-aware + auto-compact), plugado via hooks pre/post/flush |
+
+- **`token-crunch`** — instale o binário (escolha o gerenciador que existe nesta máquina):
+  - (go) `go install github.com/micaelmalta/token-crunch/cmd/token-crunch@latest`
+  - _Sem Go no PATH: baixe o asset prebuilt token-crunch-<os>-<arch> da página de releases, verifique o .sha256 e ponha no PATH._
+  - Verifique: `token-crunch version`
+  - Os hooks pre/post/flush já vêm no config/settings.json (Fase 4). NÃO rode `token-crunch install` — ele apenas re-mesclaria os mesmos hooks. Use-o só se preferir que a própria ferramenta gerencie os hooks.
+
 ## Fase 4 — settings.json (com cuidado)
 Mescle `config/settings.json` no `~/.claude/settings.json`. Os paths usam
 `${HOME}` — confirme que expandem nesta máquina.
@@ -85,6 +104,10 @@ Mescle `config/settings.json` no `~/.claude/settings.json`. Os paths usam
 ## Fase 5 — Hooks, statusline, keybindings, agents, skills
 Copie de `config/` para `~/.claude/`. **Atenção a trechos específicos de
 plataforma** encontrados: `wsl-screenshot-cli`, `~/bin/claude-notify`
+
+Hooks que chamam binários externos só funcionam se o binário existir no PATH —
+garanta que as dependências da Fase 3.5 foram instaladas antes de confiar nesses
+hooks.
 
 Detecte o SO deste destino e trate cada marcador conforme a plataforma a que
 pertence (regra simétrica — vale nos dois sentidos):

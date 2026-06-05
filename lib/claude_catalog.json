@@ -1,5 +1,5 @@
 {
-  "_comment": "Conhecimento para exportar a config do Claude Code. 'language_servers' mapeia cada plugin LSP ao binário que ele exige e a como instalá-lo. 'sensitive_never_export' nunca é copiado. 'non_portable_markers' sinaliza o que quebra fora do WSL.",
+  "_comment": "Conhecimento para exportar a config do Claude Code. 'language_servers' mapeia cada plugin LSP ao binário que ele exige e a como instalá-lo. 'hook_dependencies' faz o mesmo para binários que os HOOKS do settings.json invocam. 'sensitive_never_export' nunca é copiado. 'non_portable_markers' sinaliza o que quebra fora do WSL.",
 
   "language_servers": {
     "typescript-language-server": {
@@ -47,6 +47,22 @@
         "rustup": "rustup component add rust-analyzer",
         "cargo": "cargo install --git https://github.com/rust-lang/rust-analyzer rust-analyzer"
       }
+    }
+  },
+
+  "hook_dependencies": {
+    "_comment": "Binários externos que HOOKS do settings.json invocam (análogo a 'language_servers', mas para hooks em vez de plugins LSP). 'detect_in_hooks' = trecho procurado nos hooks do settings; o export inclui só as dependências realmente usadas aqui. Os hooks em si já viajam via config/settings.json — no destino só falta instalar o binário no PATH, senão o hook falha.",
+    "token-crunch": {
+      "binary": "token-crunch",
+      "detect_in_hooks": "token-crunch",
+      "describe": "Motor de compressão de tokens para o Claude Code (dedup + structure-aware + auto-compact), plugado via hooks pre/post/flush",
+      "source": "https://github.com/micaelmalta/token-crunch",
+      "verify": "token-crunch version",
+      "install": {
+        "go": "go install github.com/micaelmalta/token-crunch/cmd/token-crunch@latest"
+      },
+      "install_note": "Sem Go no PATH: baixe o asset prebuilt token-crunch-<os>-<arch> da página de releases, verifique o .sha256 e ponha no PATH.",
+      "post_install": "Os hooks pre/post/flush já vêm no config/settings.json (Fase 4). NÃO rode `token-crunch install` — ele apenas re-mesclaria os mesmos hooks. Use-o só se preferir que a própria ferramenta gerencie os hooks."
     }
   },
 
