@@ -287,6 +287,7 @@ quebrar o que já existe), **verificação** (testar, não presumir) e **backup*
 | `tests/test_exporter.py` | Testes do export de shell + classificação por plataforma. |
 | `tests/test_claude_exporter.py` | Testes do export do Claude (foco em sanitização de segredos). |
 | `tests/test_dryrun.py` | Testes do plano de adaptação (regra bidirecional manter×remover). |
+| `tests/test_integration.py` | Teste de integração: os dois fluxos completos (WSL↔macOS) ponta a ponta. |
 | `profile/` | Saída do export de shell (commitada — é o que viaja). |
 | `profile/claude/` | Saída do export do Claude Code (manifest + CLAUDE_SETUP.md + config/). |
 
@@ -322,13 +323,17 @@ Os testes de regressão do exporter rodam só com a stdlib do Python (sem
 `pip install`):
 
 ```bash
-python3 -m unittest tests.test_exporter tests.test_claude_exporter tests.test_dryrun
+python3 -m unittest discover -s tests -p "test_*.py"
 ```
 
-Cobrem o export de shell (parsing do `.zshrc`, detecção de ferramentas,
-classificação de linhas por plataforma, geração do `manifest.json`/`SETUP.md`), o
-export do Claude (com foco em **sanitização de segredos** e detecção de language
-servers) e o **plano de adaptação** bidirecional (manter×remover por destino).
+Cobrem, em camadas:
+- **unitários** — export de shell (parsing do `.zshrc`, detecção, classificação
+  por plataforma), export do Claude (**sanitização de segredos**, language
+  servers) e o **plano de adaptação** bidirecional (`test_dryrun`);
+- **integração** (`test_integration`) — os **dois fluxos completos** ponta a
+  ponta: WSL→macOS e macOS→WSL (export → manifest → import → `.zshrc` adaptado),
+  mais o round-trip de sanitização e de backup/restore.
+
 Rode-os após qualquer mudança em `lib/`, `scripts/dryrun.py` ou nos catálogos.
 
 ## Segurança

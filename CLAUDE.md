@@ -7,8 +7,8 @@ determinístico (scripts); o import é híbrido (o Claude lê um roteiro e adapt
 ## Comandos
 
 ```bash
-# Testes (só stdlib — NÃO há pytest nem deps externas)
-python3 -m unittest tests.test_exporter tests.test_claude_exporter tests.test_dryrun
+# Testes (só stdlib — NÃO há pytest nem deps externas). Inclui integração (2 fluxos).
+python3 -m unittest discover -s tests -p "test_*.py"
 
 # Exports (rodam na ORIGEM; geram/atualizam profile/)
 ./export.sh            # ambiente shell  → profile/ (manifest.json, SETUP.md, dotfiles/)
