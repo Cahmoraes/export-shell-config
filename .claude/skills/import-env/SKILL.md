@@ -49,7 +49,7 @@ Leia `profile/claude/CLAUDE_SETUP.md` e execute-o:
   método do roteiro, erro do gerenciador, decisão sensível) — não confie só na
   memória da conversa.
 - **Gere o `RELATORIO_IMPORT.md`** na raiz do repo, seguindo o molde em
-  `references/relatorio-import.template.md`. É um report **sumarizado** e
+  `references/import-report.md`. É um report **sumarizado** e
   específico desta máquina (está no `.gitignore`, não viaja no profile). Ele
   existe para o caso em que **o destino não consegue instalar uma biblioteca
   sozinho** — o método de instalação costuma variar por SO (ex.: `rtk` →
