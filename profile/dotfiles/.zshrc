@@ -50,23 +50,7 @@ fi
 [[ -f "$HOME/.fzf.zsh" ]] && source "$HOME/.fzf.zsh"
 command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh)"
 
-# token-crunch: aponta para o config com denylist (JSON de config/manifest
-# não devem ser comprimidos — colapsar esconde campos e força releitura)
-[[ -f "$HOME/.config/token-crunch/config.json" ]] && export TOKEN_CRUNCH_CONFIG="$HOME/.config/token-crunch/config.json"
-
-# Env específicos de desktop (ajuste se não fizer sentido no seu setup)
-export WARP_ENABLE_WAYLAND=1
-export MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA
-export BROWSER=google-chrome
-
-# Warp: notifica que o rc foi carregado (somente no Warp)
-if [[ "$TERM_PROGRAM" == "WarpTerminal" ]]; then
-  printf '\ePsf{"hook":"SourcedRcFileForWarp","value":{"shell":"zsh"}}\x9c'
-fi
-
-# Aliases de compatibilidade (Ubuntu renomeia bat e fd para evitar conflitos)
-alias bat="batcat"
-alias fd="fdfind"
+# Aliases de listagem (eza — binário nativo no macOS, sem renome bat/fd)
 alias ls="eza"
 alias ll="eza -la"
 alias tree="eza --tree"
@@ -88,17 +72,17 @@ alias ppci="pnpm install --frozen-lockfile"
 alias ppu="dlx npm-check -u"
 alias show-alias="cat ~/.zshrc | grep alias"
 alias mkdir="mkdir -p"
-alias open-zsh="code ~/.zshrc"
-alias docker-restart="sudo service docker restart"
+# docker-restart: origem usa `sudo service docker restart` (Linux); no macOS reinicia o Docker Desktop
+alias docker-restart="osascript -e 'quit app \"Docker\"' && open -a Docker"
+# headroom roteia o claude pelo proxy persistente (ANTHROPIC_BASE_URL no bloco headroom abaixo) — sem 'wrap', sem delay
+alias claudey="claude --dangerously-skip-permissions"
+alias claudya="claude agents --dangerously-skip-permissions"
 alias copiloty="copilot --yolo"
+alias open-zsh="code ~/.zshrc"
+alias ammend="git commit --amend --no-edit"
+alias glow="glow -p"
 # Node
 alias nw="node --watch"
-# Git
-alias ammend="git commit --amend --no-edit"
-alias claudey="headroom wrap claude --dangerously-skip-permissions"
-alias claudya="headroom wrap claude agents --dangerously-skip-permissions"
-alias glow="glow -p"
-
 
 # Coloque isso após a inicialização do nvm no seu ~/.zshrc
 autoload -U add-zsh-hook
@@ -135,20 +119,28 @@ case ":$PATH:" in
   *) export PATH="$PNPM_HOME/bin:$PATH" ;;
 esac
 # pnpm end
-
-# VS Code CLI (WSL → abre no Windows)
-VSCODE_BIN="/mnt/c/Users/ike_m/AppData/Local/Programs/Microsoft VS Code/bin"
-[[ -d "$VSCODE_BIN" ]] && path=("$VSCODE_BIN" $path)
-
-# ── VS Code CPU priority (evita travar YouTube/video ao abrir VS Code) ──────
-# Aplica nice=10 nos processos VS Code quando chamado
-alias nice-vscode='bash ~/nice-vscode.sh'
-alias nice-vscode-restore='bash ~/nice-vscode.sh 0'
-alias pscreen='pastepng /tmp/screen.png && echo /tmp/screen.png'
-
-# PulseAudio → WSLg (voice mode)
-export PULSE_SERVER=unix:/mnt/wslg/runtime-dir/pulse/native
+# Anthropic / Claude Code
+# export ANTHROPIC_DEFAULT_HAIKU_MODEL="claude-haiku-4-5"
+# export ANTHROPIC_DEFAULT_OPUS_MODEL="claude-opus-4-6"
+# export ANTHROPIC_DEFAULT_SONNET_MODEL="claude-sonnet-4-6"
+# export ANTHROPIC_FOUNDRY_BASE_URL="https://pre-mg-api.telefonicabigdata.com/anthropic"
+# export CLAUDE_CODE_USE_FOUNDRY="1"
+# export ANTHROPIC_FOUNDRY_API_KEY="b7537c6df0d847a9b0c75e19a7534b30"
 
 # bun completions
 [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 export PATH="$HOME/.local/bin:$PATH"
+
+# >>> headroom persistent env >>>
+export HEADROOM_PORT="8787"
+export HEADROOM_HOST="127.0.0.1"
+export HEADROOM_MODE="token"
+export HEADROOM_BACKEND="anthropic"
+export ANTHROPIC_BASE_URL="http://127.0.0.1:8787"
+export COPILOT_PROVIDER_TYPE="anthropic"
+export COPILOT_PROVIDER_BASE_URL="http://127.0.0.1:8787"
+# <<< headroom persistent env <<<
+
+# headroom: mantém o tool-search deferido do Claude Code ativo com ANTHROPIC_BASE_URL custom (issue #746).
+# Fora do bloco gerenciado acima para não ser sobrescrito em futuros 'headroom install apply'.
+export ENABLE_TOOL_SEARCH=true

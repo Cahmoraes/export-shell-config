@@ -47,8 +47,7 @@ if [ -n "$ctx_pct" ]; then
 fi
 
 if [ -n "$five_resets_at" ]; then
-  # Portável: BSD/macOS usa `date -r <epoch>`; GNU/Linux usa `date -d @<epoch>`.
-  # No GNU, `-r` interpreta o arg como ARQUIVO e falha (2>/dev/null) → cai no `-d`.
+  # macOS usa `date -r <epoch>`; GNU/Linux usa `date -d "@<epoch>"`. Tenta BSD, cai pra GNU.
   reset_time=$(date -r "${five_resets_at}" "+%H:%M" 2>/dev/null || date -d "@${five_resets_at}" "+%H:%M" 2>/dev/null)
   if [ -n "$reset_time" ]; then
     session_pct=""

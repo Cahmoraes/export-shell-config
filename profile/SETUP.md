@@ -2,16 +2,16 @@
 
 > **Para o Claude Code:** este arquivo é um roteiro executável. Leia-o por
 > inteiro junto com `manifest.json` (no mesmo diretório) antes de agir.
-> NÃO copie o `.zshrc` de origem cru — ele foi gerado em **debian** e contém
+> NÃO copie o `.zshrc` de origem cru — ele foi gerado em **macos** e contém
 > linhas específicas dessa plataforma que quebram em outros SOs. O fluxo é
 > **bidirecional** (WSL↔macOS↔Linux): na Fase 4 você remove as linhas cuja
 > plataforma não corresponde a ESTE destino.
 
 ## Contexto da origem
-- SO de origem: **debian** (WSL: True)
+- SO de origem: **macos** (WSL: False)
 - Framework: **oh-my-zsh**
 - Tema ativo: **dracula-pro**
-- Linhas específicas de plataforma encontradas: wsl_windows: 10, debian_binary_rename: 2
+- Linhas específicas de plataforma encontradas: macos: 2
 
 ## Dois princípios que valem para TODAS as fases
 
@@ -100,8 +100,8 @@ pare e investigue antes de seguir.
   gratuita `dracula`. Veja o `note` do tema no manifest.
 
 ### Fase 4 — Montar o .zshrc adaptado (BIDIRECIONAL)
-Use `dotfiles/.zshrc` como BASE. As 12 linhas específicas de plataforma
-(wsl_windows: 10, debian_binary_rename: 2) estão em `manifest.json → platform_specific_lines`, cada uma
+Use `dotfiles/.zshrc` como BASE. As 2 linhas específicas de plataforma
+(macos: 2) estão em `manifest.json → platform_specific_lines`, cada uma
 com um campo `platform`. **Detecte o SO deste destino e remova as linhas cuja
 `platform` NÃO corresponde a ele:**
 - `platform: macos` (`/opt/homebrew`, `brew shellenv`, `pbcopy`, `pbpaste`,
@@ -137,6 +137,7 @@ Esta fase é o critério de sucesso. Execute, não presuma.
 | `eza` | CLI | `eza --version` |
 | `glow` | CLI | `glow --version` |
 | `micro` | CLI | `micro --version` |
+| `starship` | CLI | `starship --version` |
 | `kubectl` | CLI | `kubectl version --client` |
 | `rtk` | CLI | `rtk --version` |
 | `nvm` | version manager | `nvm --version  # rodar em shell interativa, após carregar o nvm` |
@@ -177,4 +178,5 @@ config**; pacotes instalados (brew/apt) permanecem — desinstale-os à parte se
 quiser, listando o que foi "instalado agora" no relatório final.
 
 ## Itens que exigem atenção manual
-- **dracula-pro**: Tema PRO (PAGO) da Dracula. NÃO está em repo público. Você precisa baixar do seu acesso comprado em draculatheme.com/pro e copiar o arquivo .zsh-theme para ${ZSH_CUSTOM}/themes/. A versão gratuita equivalente é 'dracula' (git clone https://github.com/dracula/zsh). O Claude deve PERGUNTAR qual você quer usar na máquina nova.\n
+- **dracula-pro**: Tema PRO (PAGO) da Dracula. NÃO está em repo público. Você precisa baixar do seu acesso comprado em draculatheme.com/pro e copiar o arquivo .zsh-theme para ${ZSH_CUSTOM}/themes/. A versão gratuita equivalente é 'dracula' (git clone https://github.com/dracula/zsh). O Claude deve PERGUNTAR qual você quer usar na máquina nova.
+

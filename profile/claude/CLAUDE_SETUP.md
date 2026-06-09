@@ -61,7 +61,7 @@ no PATH. Regras:
 | `vtsls` | typescript-lsp@claude-plugins-official | `vtsls` | pnpm, npm | sim |
 | `pyright` | pyright-lsp@claude-plugins-official | `pyright-langserver` | pnpm, npm, pip | sim |
 | `gopls` | gopls-lsp@claude-plugins-official | `gopls` | go | sim |
-| `rust-analyzer` | rust-analyzer-lsp@claude-plugins-official | `rust-analyzer` | rustup, cargo | NÃO |
+| `rust-analyzer` | rust-analyzer-lsp@claude-plugins-official | `rust-analyzer` | rustup, cargo | sim |
 
 A coluna "Gerenciadores" lista as chaves disponíveis em
 `manifest.language_servers[].install` — escolha a que existe nesta máquina.
@@ -86,7 +86,7 @@ Mescle `config/settings.json` no `~/.claude/settings.json`. Os paths usam
 
 ## Fase 5 — Hooks, statusline, keybindings, agents, skills
 Copie de `config/` para `~/.claude/`. **Atenção a trechos específicos de
-plataforma** encontrados: `wsl-screenshot-cli`, `~/bin/claude-notify`
+plataforma** encontrados: `/Users/`
 
 Hooks que chamam binários externos só funcionam se o binário existir no PATH —
 garanta que as dependências da Fase 3.5 foram instaladas antes de confiar nesses

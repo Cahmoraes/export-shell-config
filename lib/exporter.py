@@ -308,6 +308,12 @@ def render_setup_md(manifest: dict) -> str:
                 verify_rows.append(f"| `{it['name']}` | {cat_label} | `{it['verify']}` |")
     verify_table = "\n".join(verify_rows) if verify_rows else "| — | — | — |"
 
+    manual_items = "".join(
+        f"- **{p['name']}**: {p['note']}\n"
+        for p in [manifest["theme"]]
+        if p and p.get("manual")
+    )
+
     return f"""# SETUP — Preparar este ambiente shell
 
 > **Para o Claude Code:** este arquivo é um roteiro executável. Leia-o por
@@ -474,7 +480,7 @@ config**; pacotes instalados (brew/apt) permanecem — desinstale-os à parte se
 quiser, listando o que foi "instalado agora" no relatório final.
 
 ## Itens que exigem atenção manual
-{"".join(f"- **{p['name']}**: {p['note']}\\n" for p in [manifest['theme']] if p and p.get('manual'))}
+{manual_items}
 """
 
 

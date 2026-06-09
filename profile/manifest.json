@@ -1,8 +1,8 @@
 {
   "generated_from": {
-    "os": "debian",
-    "is_wsl": true,
-    "hostname": "caique"
+    "os": "macos",
+    "is_wsl": false,
+    "hostname": "MKQP2CKG49H"
   },
   "framework": "oh-my-zsh",
   "theme": {
@@ -152,6 +152,23 @@
       "note": null
     },
     {
+      "name": "starship",
+      "source": "https://github.com/starship/starship",
+      "install": {
+        "macos": "brew install starship",
+        "debian": "curl -sS https://starship.rs/install.sh | sh"
+      },
+      "verify": "starship --version",
+      "detect": "starship",
+      "detect_alt": null,
+      "detect_path": null,
+      "shell_init": null,
+      "config_dirs": [
+        "~/.config/starship.toml"
+      ],
+      "note": null
+    },
+    {
       "name": "kubectl",
       "source": "https://kubernetes.io/docs/tasks/tools/",
       "install": {
@@ -268,87 +285,23 @@
   ],
   "dotfiles_copied": [
     ".zshrc",
-    ".zshenv",
-    ".p10k.zsh",
-    ".fzf.zsh",
     ".config/micro",
     ".config/glow",
     ".config/starship.toml",
-    ".config/caveman",
-    ".config/token-crunch"
+    ".config/caveman"
   ],
   "platform_specific_lines": [
     {
-      "line": 58,
-      "pattern": "WARP_ENABLE_WAYLAND",
-      "platform": "wsl_windows",
-      "text": "export WARP_ENABLE_WAYLAND=1"
+      "line": 76,
+      "pattern": "osascript",
+      "platform": "macos",
+      "text": "alias docker-restart=\"osascript -e 'quit app \\\"Docker\\\"' && open -a Docker\""
     },
     {
-      "line": 59,
-      "pattern": "MESA_D3D12",
-      "platform": "wsl_windows",
-      "text": "export MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA"
-    },
-    {
-      "line": 63,
-      "pattern": "WarpTerminal",
-      "platform": "wsl_windows",
-      "text": "if [[ \"$TERM_PROGRAM\" == \"WarpTerminal\" ]]; then"
-    },
-    {
-      "line": 64,
-      "pattern": "SourcedRcFileForWarp",
-      "platform": "wsl_windows",
-      "text": "printf '\\ePsf{\"hook\":\"SourcedRcFileForWarp\",\"value\":{\"shell\":\"zsh\"}}\\x9c'"
-    },
-    {
-      "line": 68,
-      "pattern": "alias bat=\"batcat\"",
-      "platform": "debian_binary_rename",
-      "text": "alias bat=\"batcat\""
-    },
-    {
-      "line": 69,
-      "pattern": "alias fd=\"fdfind\"",
-      "platform": "debian_binary_rename",
-      "text": "alias fd=\"fdfind\""
-    },
-    {
-      "line": 140,
-      "pattern": "/mnt/c",
-      "platform": "wsl_windows",
-      "text": "VSCODE_BIN=\"/mnt/c/Users/ike_m/AppData/Local/Programs/Microsoft VS Code/bin\""
-    },
-    {
-      "line": 141,
-      "pattern": "VSCODE_BIN",
-      "platform": "wsl_windows",
-      "text": "[[ -d \"$VSCODE_BIN\" ]] && path=(\"$VSCODE_BIN\" $path)"
-    },
-    {
-      "line": 145,
-      "pattern": "nice-vscode",
-      "platform": "wsl_windows",
-      "text": "alias nice-vscode='bash ~/nice-vscode.sh'"
-    },
-    {
-      "line": 146,
-      "pattern": "nice-vscode",
-      "platform": "wsl_windows",
-      "text": "alias nice-vscode-restore='bash ~/nice-vscode.sh 0'"
-    },
-    {
-      "line": 147,
-      "pattern": "pastepng",
-      "platform": "wsl_windows",
-      "text": "alias pscreen='pastepng /tmp/screen.png && echo /tmp/screen.png'"
-    },
-    {
-      "line": 150,
-      "pattern": "/mnt/wslg",
-      "platform": "wsl_windows",
-      "text": "export PULSE_SERVER=unix:/mnt/wslg/runtime-dir/pulse/native"
+      "line": 131,
+      "pattern": "/Users/",
+      "platform": "macos",
+      "text": "[ -s \"/Users/caique/.bun/_bun\" ] && source \"/Users/caique/.bun/_bun\""
     }
   ],
   "_note": "Gerado por export.sh. Cada item de 'platform_specific_lines' tem um campo 'platform' (macos/wsl_windows/debian_binary_rename). No destino, REMOVA as linhas cuja plataforma não corresponde ao SO de lá. Bidirecional."
