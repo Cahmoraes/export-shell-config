@@ -1,6 +1,6 @@
 ---
 name: export-env
-description: Exporta o ambiente DESTA máquina (shell zsh + Claude Code) e publica no GitHub. Use na máquina de ORIGEM quando o usuário quer salvar ou atualizar o snapshot do ambiente para levar a outra máquina (ex.: "exporte meu ambiente", "salve minhas configs", "atualize o snapshot e suba").
+description: Exporta o ambiente DESTA máquina (shell zsh + Claude Code) e publica no GitHub. Use na máquina de ORIGEM quando o usuário quer salvar ou atualizar o snapshot do ambiente para levar a outra máquina (ex "exporte meu ambiente", "salve minhas configs", "atualize o snapshot e suba").
 ---
 
 # export-env
