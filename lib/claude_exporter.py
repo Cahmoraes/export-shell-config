@@ -489,7 +489,15 @@ pip install "headroom-ai[all]"   # ou: pip install --upgrade "headroom-ai[all]"
 # Configura apenas claude e codex (sem copilot — requer BYOK não disponível)
 headroom install apply --providers manual --target claude --target codex
 headroom install start
-headroom install status   # confirme: Status: running, Healthy: yes
+# Verifique pelo HEALTH, não por `headroom install status`: no macOS ≥0.24 o
+# status usa `launchctl kickstart` e reporta "stopped" mesmo com o proxy saudável.
+# Fallback macOS — se `start` falhar (exit 113, GUI domain inacessível numa sessão
+# não-interativa), faça o bootstrap explícito do launchd e cheque de novo:
+curl -fsS http://127.0.0.1:8787/health >/dev/null && echo "proxy healthy" || \
+  launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.headroom.*.plist 2>/dev/null
+sleep 2
+curl -fsS http://127.0.0.1:8787/health >/dev/null && echo "proxy healthy" \
+  || echo "proxy NÃO subiu — inspecione os logs do headroom"
 ```
 
 ### 6b-bis — Habilitar o interceptor de tool_results (ast-grep outliner)
@@ -515,15 +523,25 @@ if "--intercept-tool-results" not in args:
 else:
     print("flag já presente")
 PY
-headroom install stop && headroom install start   # ou: headroom init claude (recria o processo)
-headroom install status   # confirme: running + healthy
+
+# ⚠️ NÃO reinicie o headroom diretamente nesta sessão: se este Claude Code já
+# estiver roteando pelo proxy (ANTHROPIC_BASE_URL → 127.0.0.1:8787), um
+# `headroom install stop` síncrono mata o backend da PRÓPRIA sessão e ela
+# congela antes de o `start` rodar (precisaria de outra ferramenta para subir).
+# Por isso o reinício roda DESACOPLADO, em background imune a SIGHUP — o `start`
+# acontece mesmo que o socket do cliente caia no intervalo:
+nohup sh -c 'headroom install stop; sleep 2; headroom install start' >/tmp/headroom-restart.log 2>&1 &
+sleep 4   # dá tempo de o proxy voltar antes de checar (veja /tmp/headroom-restart.log se falhar)
+# Verifique pelo /health (não por `headroom install status` — quirk do macOS ≥0.24):
+curl -fsS http://127.0.0.1:8787/health >/dev/null && echo "proxy healthy" \
+  || echo "proxy não respondeu — veja /tmp/headroom-restart.log"
 ```
 Verifique o efeito: `headroom proxy --help | grep intercept` deve listar a flag, e
 o `proxy_args` no manifest deve conter `--intercept-tool-results`.
 
 ### 6c — Integrar com o Claude Code
 ```bash
-headroom init claude   # escreve ANTHROPIC_BASE_URL em ~/.claude/settings.json + hooks
+headroom init claude   # escreve ANTHROPIC_BASE_URL em ~/.claude/settings.local.json + hooks
 ```
 
 ### 6d — Registrar MCPs (headroom + serena)

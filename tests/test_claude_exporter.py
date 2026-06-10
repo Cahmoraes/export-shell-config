@@ -240,6 +240,49 @@ class TestManifestAndSetup(unittest.TestCase):
         self.assertIn("claude plugin marketplace list", md)   # idempotência de marketplace
         self.assertIn("claude plugin list", md)               # idempotência de plugin
 
+    def test_setup_md_headroom_restart_is_decoupled(self):
+        # Regressão: reiniciar o headroom INLINE derruba o backend da própria
+        # sessão Claude Code (o proxy escuta na 8787 e vira ANTHROPIC_BASE_URL).
+        # Um `headroom install stop` síncrono congela a sessão antes do `start`.
+        # Todo stop/restart no roteiro precisa rodar DESACOPLADO (nohup/setsid em
+        # background). Sem isto, a auto-sabotagem volta.
+        md = ce.render_setup_md(self._manifest())
+        # o padrão perigoso exato jamais pode reaparecer
+        self.assertNotIn("headroom install stop && headroom install start", md)
+        # toda linha de comando (não-comentário) que pare/reinicie o headroom
+        # tem de estar desacoplada do processo do Claude
+        for line in md.splitlines():
+            if line.strip().startswith("#"):
+                continue   # comentários explicativos podem citar o comando
+            if "headroom install stop" in line or "headroom install restart" in line:
+                self.assertTrue(
+                    ("nohup" in line) or ("setsid" in line),
+                    f"reinício do headroom não desacoplado: {line!r}",
+                )
+        # o aviso explícito precisa estar no roteiro
+        self.assertIn("NÃO reinicie o headroom diretamente nesta sessão", md)
+
+    def test_setup_md_headroom_verified_via_health_endpoint(self):
+        # Regressão: `headroom install status` mente no macOS ≥0.24 (reporta
+        # "stopped" com o proxy saudável). Se o roteiro confiar nele para
+        # confirmar o serviço, o Claude conclui "falhou" e re-tenta o restart —
+        # re-disparando a sabotagem. A verdade do runtime é o /health.
+        md = ce.render_setup_md(self._manifest())
+        self.assertIn("curl", md)
+        self.assertIn("127.0.0.1:8787/health", md)
+        # fallback macOS para `headroom install start` exit 113 (GUI domain)
+        self.assertIn("launchctl bootstrap", md)
+
+    def test_setup_md_headroom_init_targets_settings_local(self):
+        # Regressão: `headroom init claude` grava ANTHROPIC_BASE_URL em
+        # settings.local.json, não settings.json. O roteiro tem de apontar o
+        # arquivo certo (senão o usuário procura no lugar errado).
+        md = ce.render_setup_md(self._manifest())
+        self.assertIn("settings.local.json", md)
+        self.assertNotIn(
+            "ANTHROPIC_BASE_URL em ~/.claude/settings.json", md
+        )
+
 
 class TestCopyTextSanitized(unittest.TestCase):
     def test_replaces_home_in_file(self):
