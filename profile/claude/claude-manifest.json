@@ -88,13 +88,13 @@
     },
     {
       "name": "gopls-lsp@claude-plugins-official",
-      "enabled": true,
+      "enabled": false,
       "version": "1.0.0",
       "gitCommitSha": null
     },
     {
       "name": "rust-analyzer-lsp@claude-plugins-official",
-      "enabled": true,
+      "enabled": false,
       "version": "1.0.0",
       "gitCommitSha": null
     },
@@ -165,33 +165,6 @@
         "pnpm": "pnpm add -g pyright",
         "npm": "npm install -g pyright",
         "pip": "pip install pyright"
-      }
-    },
-    {
-      "language_server": "gopls",
-      "binary": "gopls",
-      "for_plugins": [
-        "gopls-lsp@claude-plugins-official"
-      ],
-      "describe": "LSP de Go (gopls)",
-      "installed_on_source": true,
-      "source_path": "/home/cahmoraes/go/bin/gopls",
-      "install": {
-        "go": "go install golang.org/x/tools/gopls@latest"
-      }
-    },
-    {
-      "language_server": "rust-analyzer",
-      "binary": "rust-analyzer",
-      "for_plugins": [
-        "rust-analyzer-lsp@claude-plugins-official"
-      ],
-      "describe": "LSP de Rust (rust-analyzer)",
-      "installed_on_source": false,
-      "source_path": null,
-      "install": {
-        "rustup": "rustup component add rust-analyzer",
-        "cargo": "cargo install --git https://github.com/rust-lang/rust-analyzer rust-analyzer"
       }
     }
   ],

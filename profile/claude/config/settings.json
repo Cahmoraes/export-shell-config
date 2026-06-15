@@ -101,8 +101,8 @@
       "Prisma-Local"
     ],
     "pyright-lsp@claude-plugins-official": true,
-    "gopls-lsp@claude-plugins-official": true,
-    "rust-analyzer-lsp@claude-plugins-official": true,
+    "gopls-lsp@claude-plugins-official": false,
+    "rust-analyzer-lsp@claude-plugins-official": false,
     "commit-commands@claude-plugins-official": true,
     "headroom@headroom-marketplace": true,
     "chrome-devtools-mcp@chrome-devtools-plugins": true,

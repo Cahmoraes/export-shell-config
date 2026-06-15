@@ -500,28 +500,47 @@ curl -fsS http://127.0.0.1:8787/health >/dev/null && echo "proxy healthy" \
   || echo "proxy NÃO subiu — inspecione os logs do headroom"
 ```
 
-### 6b-bis — Habilitar o interceptor de tool_results (ast-grep outliner)
-A flag `--intercept-tool-results` faz o proxy substituir Reads grandes de código
-(`.ts/.py/.rs` > 500 chars) por um outline ast-grep (só assinaturas de nível
-superior); o corpo só vai ao modelo quando se pede um range específico. Reduz
-tokens de reads em ~60-80%.
+### 6b-bis — Afinar o manifest do deploy (intercept + memória + telemetria)
+Três ajustes vivem só no manifest do deploy e **NÃO** são gerados por
+`headroom install apply` (o planner não os escreve) — por isso precisam ser
+aplicados à mão aqui e persistidos no manifest do profile `default`:
 
-A flag existe em `headroom proxy`, mas **NÃO** em `headroom install apply` — então
-ela não é setada pelo passo 6b. Ela persiste apenas no `proxy_args` do manifest
-do deploy. Adicione-a ali e reinicie o serviço:
+1. **`--intercept-tool-results`** (em `proxy_args`): faz o proxy substituir Reads
+   grandes de código (`.ts/.py/.rs` > 500 chars) por um outline ast-grep (só
+   assinaturas de nível superior); o corpo só vai ao modelo quando se pede um
+   range específico. É a maior fonte de economia para um agente de código
+   (reduz tokens de reads em ~60-80%). A antiga flag `--compress-superseded-reads`
+   **não existe mais** nesta versão — não a use.
+2. **`memory_enabled: true`** — memória cross-agent com embedder **local** (default
+   quando habilitada; sem custo de API). O `memory.db` é criado no primeiro uso
+   em `memory_db_path` e é estado de runtime: **não viaja** no profile (como o
+   `learn`). Aqui só liga-se a *config*.
+3. **`telemetry_enabled: false`** — desliga telemetria (alinhado ao RTK).
+
+⚠️ Se você rodar `headroom install apply` no futuro, ele **sobrescreve** o manifest
+e remove estes três ajustes — basta reaplicar este bloco.
 ```bash
-MANIFEST="$HOME/.headroom/deploy/init-user/manifest.json"   # ajuste o profile se != init-user
+MANIFEST="$HOME/.headroom/deploy/default/manifest.json"   # ajuste o profile se != default
 python3 - "$MANIFEST" <<'PY'
 import json, sys
 p = sys.argv[1]
 m = json.load(open(p))
+changed = []
 args = m.setdefault("proxy_args", [])
 if "--intercept-tool-results" not in args:
     args.append("--intercept-tool-results")
+    changed.append("intercept-tool-results")
+if m.get("memory_enabled") is not True:
+    m["memory_enabled"] = True
+    changed.append("memory_enabled=true")
+if m.get("telemetry_enabled") is not False:
+    m["telemetry_enabled"] = False
+    changed.append("telemetry_enabled=false")
+if changed:
     json.dump(m, open(p, "w"), indent=2)
-    print("flag adicionada")
+    print("aplicado:", ", ".join(changed))
 else:
-    print("flag já presente")
+    print("nada a mudar (já afinado)")
 PY
 
 # ⚠️ NÃO reinicie o headroom diretamente nesta sessão: se este Claude Code já
@@ -536,8 +555,9 @@ sleep 4   # dá tempo de o proxy voltar antes de checar (veja /tmp/headroom-rest
 curl -fsS http://127.0.0.1:8787/health >/dev/null && echo "proxy healthy" \
   || echo "proxy não respondeu — veja /tmp/headroom-restart.log"
 ```
-Verifique o efeito: `headroom proxy --help | grep intercept` deve listar a flag, e
-o `proxy_args` no manifest deve conter `--intercept-tool-results`.
+Verifique o efeito no manifest do profile `default`: `proxy_args` deve conter
+`--intercept-tool-results`, `memory_enabled` deve ser `true` e `telemetry_enabled`
+`false`. A flag também deve aparecer em `headroom proxy --help | grep intercept`.
 
 ### 6c — Integrar com o Claude Code
 ```bash
